@@ -46,6 +46,7 @@ import { rehydratePersistedState } from '../utils/reduxStateToLocalStorageHelper
 export const RESET_STATE = 'RESET_STATE';
 export const ADD_QUERY_EDITOR = 'ADD_QUERY_EDITOR';
 export const UPDATE_QUERY_EDITOR = 'UPDATE_QUERY_EDITOR';
+export const UPDATE_UNSAVED_QUERY = 'UPDATE_UNSAVED_QUERY';
 export const QUERY_EDITOR_SAVED = 'QUERY_EDITOR_SAVED';
 export const CLONE_QUERY_TO_NEW_TAB = 'CLONE_QUERY_TO_NEW_TAB';
 export const REMOVE_QUERY_EDITOR = 'REMOVE_QUERY_EDITOR';
@@ -160,6 +161,10 @@ export function resetState(data) {
 
 export function updateQueryEditor(alterations) {
   return { type: UPDATE_QUERY_EDITOR, alterations };
+}
+
+export function updateUnsavedQuery(alterations) {
+  return { type: UPDATE_UNSAVED_QUERY, alterations };
 }
 
 export function setEditorTabLastUpdate(timestamp) {

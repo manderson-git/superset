@@ -1,7 +1,10 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import Loading from 'src/components/Loading';
-import { updateQueryEditor } from 'src/SqlLab/actions/sqlLab';
+import {
+  updateQueryEditor,
+  updateUnsavedQuery,
+} from 'src/SqlLab/actions/sqlLab';
 import fetchRetry from 'fetch-retry';
 
 import SyntaxHighlighter from 'react-syntax-highlighter/dist/cjs/light';
@@ -90,6 +93,7 @@ const ValidateQuery = ({
   database,
   columns,
 }: ValidateQueryProps) => {
+  const state = useSelector(state => state);
   const [showModal, setShowModal] = useState(false);
   const [step, setStep] = useState('step1');
   const [fixResults, setFixResults] = useState<FixResults>({
@@ -97,13 +101,13 @@ const ValidateQuery = ({
     aiText: '',
   });
   const dispatch = useDispatch();
-  const editor = useSelector(state => state.sqlLab.queryEditors[0]);
+  const editors = useSelector(state => state.sqlLab.queryEditors);
   const unsavedQuery = useSelector(
     state => state.sqlLab.unsavedQueryEditor.sql,
   );
 
   const queryToValidate =
-    unsavedQuery !== undefined ? unsavedQuery : editor.sql;
+    unsavedQuery !== undefined ? unsavedQuery : editors[0].sql;
 
   const onClose = () => {
     setStep('step1');
@@ -123,12 +127,15 @@ const ValidateQuery = ({
 
   const onAcceptChanges = () => {
     setStep('step1');
-    dispatch(
-      updateQueryEditor({
-        remoteId: editor.remoteId,
-        sql: fixResults.sqlQuery,
-      }),
-    );
+    editors.forEach((editor: any) => {
+      dispatch(
+        updateQueryEditor({
+          remoteId: editor.remoteId,
+          sql: fixResults.sqlQuery,
+        }),
+      );
+      dispatch(updateUnsavedQuery(fixResults.sqlQuery));
+    });
     setShowModal(false);
   };
 

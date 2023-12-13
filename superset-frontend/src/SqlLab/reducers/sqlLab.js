@@ -84,6 +84,17 @@ export default function sqlLabReducer(state = {}, action) {
         'id',
       );
     },
+    [actions.UPDATE_UNSAVED_QUERY]() {
+      const existing = state.unsavedQueryEditor;
+      console.log('REDUCING UPDATE_UNSAVED_QUERY ', action);
+      return {
+        ...state,
+        unsavedQueryEditor: {
+          ...state.unsavedQueryEditor,
+          sql: action.alterations,
+        },
+      };
+    },
     [actions.UPDATE_QUERY_EDITOR]() {
       const id = action.alterations.remoteId;
       const existing = state.queryEditors.find(qe => qe.remoteId === id);

@@ -6,7 +6,10 @@ import sql from 'react-syntax-highlighter/dist/cjs/languages/hljs/sql';
 import github from 'react-syntax-highlighter/dist/cjs/styles/hljs/github';
 
 import Loading from 'src/components/Loading';
-import { updateQueryEditor } from 'src/SqlLab/actions/sqlLab';
+import {
+  updateQueryEditor,
+  updateUnsavedQuery,
+} from 'src/SqlLab/actions/sqlLab';
 
 import type { DatabaseObject } from 'src/features/databases/types';
 import { Row, Col } from 'src/components';
@@ -54,18 +57,6 @@ const Styles = styled.span`
   }
 `;
 
-/*
-
-activity item 
-{
-  type: 'userRequest', 'systemResponse', 'action';
-  userRequest: string;
-  systemResponse: string;
-  action: string;
-}
-
-*/
-
 type ActivityType = 'userRequest' | 'systemResponse' | 'userAction';
 
 interface Activity {
@@ -76,13 +67,40 @@ interface Activity {
   userAction?: string;
 }
 
-interface GenerateResults {
-  sqlQuery: string;
-  aiText: string;
-}
+const buildQuery = (query: string, activity: Activity[]) => {
+  if (activity.length === 0) {
+    return query;
+  }
 
-const callGenerateApi = async (question: string): GenerateResults => {
-  // modify this to call the fix endpoint
+  const x = activity.map((item, index) => {
+    const prompt =
+      index === 0
+        ? ''
+        : item.type === 'systemResponse'
+        ? 'Assistant:'
+        : 'Human:';
+
+    const text =
+      item.type === 'systemResponse'
+        ? `<query>${item.systemQuery}</query> ${item.systemNotes}`
+        : item.type === 'userRequest'
+        ? item.userRequest
+        : '';
+
+    return `${prompt}${text}`;
+  });
+
+  x.push(`Human: ${query}`);
+
+  return x.join('/n/n');
+};
+
+const callGenerateApi = async (question: string, activity: Activity[]) => {
+  const queryWithHistory = buildQuery(
+    question.replace(/^\s+|\s+$/g, ''), // remove line breaks from beginning / end
+    activity,
+  );
+
   const response = await fetch(
     'https://sql-helper.m1finance.staging/generate',
     {
@@ -92,13 +110,14 @@ const callGenerateApi = async (question: string): GenerateResults => {
         'Content-Type': 'application/json; charset=UTF-8',
       },
       body: JSON.stringify({
-        user_question: question,
+        user_question: queryWithHistory,
       }),
     },
   );
 
   const json = await response.json();
 
+  await setTimeout(() => null, 200);
   return {
     sqlQuery: json.sql_query,
     aiText: json.ai_text,
@@ -114,7 +133,7 @@ const GenerateQuery = ({
   columns,
 }: ValidateQueryProps) => {
   const dispatch = useDispatch();
-  const editor = useSelector(state => state.sqlLab.queryEditors[0]);
+  const editors = useSelector(state => state.sqlLab.queryEditors);
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
   const [showModal, setShowModal] = useState(false);
@@ -140,7 +159,11 @@ const GenerateQuery = ({
   };
 
   const onApplyQuery = (query: string) => {
-    dispatch(updateQueryEditor({ remoteId: editor.remoteId, sql: query }));
+    editors.forEach((editor: any) => {
+      dispatch(updateQueryEditor({ remoteId: editor.remoteId, sql: query }));
+    });
+    dispatch(updateUnsavedQuery(query));
+
     setActivity([
       ...activity,
       {
@@ -153,7 +176,7 @@ const GenerateQuery = ({
   const onUserRequest = async () => {
     setIsLoading(true);
 
-    const result = await callGenerateApi(request);
+    const result = await callGenerateApi(request, activity);
 
     setIsLoading(false);
     setActivity([

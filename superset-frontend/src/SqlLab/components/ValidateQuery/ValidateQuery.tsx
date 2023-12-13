@@ -75,21 +75,6 @@ const callFixAPI = async (query: string) => {
     sqlQuery: json.sql_query,
     aiText: json.ai_text,
   };
-
-  /*
-  const result: FixResults = {
-    sqlQuery:
-      'SELECT * FROM data.fake_data WHERE generated_date = (SELECT MAX(generated_date) FROM data.fake_data)',
-    aiText:`Explanation:
-
-    Changed the max(generated_date) to a subquery to get the maximum generated_date value from the table. Using MAX() directly in the WHERE clause is not valid syntax.
-
-Optional optimization suggestions:
-
-    Add indexes on the generated_date column to improve performance of the MAX() subquery.
-    Select only the specific columns needed rather than using SELECT *.`;
-  };
-*/
 };
 
 interface FixResults {

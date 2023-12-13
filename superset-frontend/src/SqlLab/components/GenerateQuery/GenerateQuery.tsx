@@ -103,28 +103,6 @@ const callGenerateApi = async (question: string): GenerateResults => {
     sqlQuery: json.sql_query,
     aiText: json.ai_text,
   };
-
-  /*
-
-  const result: GenerateResults = {
-    sqlQuery: `SELECT u.user_id, SUM(a.invest_aum) as total_ira_aum
-    FROM users u
-    JOIN accounts_invest a ON u.user_id = a.user_id
-    WHERE a.account_registration = 'IRA'
-    AND NOT EXISTS (
-      SELECT 1 
-      FROM accounts_invest 
-      WHERE user_id = u.user_id
-      AND account_registration != 'IRA'
-    )
-    GROUP BY u.user_id`,
-    aiText: `This query joins the users table to the accounts_invest table to get invest account information. It filters for only IRA accounts using the account_registration field. 
-
-    The NOT EXISTS piece ensures we only include users who have IRA accounts and no other account types.
-    
-    Finally, it sums the invest_aum for all IRA accounts for a given user to get their total IRA AUM.`,
-  };
-  */
 };
 
 const GenerateQuery = ({
@@ -190,31 +168,6 @@ const GenerateQuery = ({
         systemNotes: result.aiText,
       },
     ]);
-
-    /*
-    setActivity([
-      ...activity,
-      {
-        type: 'userRequest',
-        userRequest: request,
-      },
-    ]);
-    setTimeout(() => {
-      setIsLoading(false);
-      setActivity([
-        ...activity,
-        {
-          type: 'userRequest',
-          userRequest: request,
-        },
-        {
-          type: 'systemResponse',
-          systemResponse: 'SELECT awesome FROM system LIMIT 1000',
-        },
-      ]);
-    }, 1500);
-    */
-
     setRequest('');
   };
 

@@ -17,6 +17,8 @@
  * under the License.
  */
 import React, { useState, useEffect, useMemo } from 'react';
+import { useSelector } from 'react-redux';
+
 import type { DatabaseObject } from 'src/features/databases/types';
 import { Row, Col } from 'src/components';
 import { Input, TextArea } from 'src/components/Input';

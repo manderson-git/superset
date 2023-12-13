@@ -1425,14 +1425,8 @@ TALISMAN_ENABLED = utils.cast_to_boolean(os.environ.get("TALISMAN_ENABLED", True
 # If you want Talisman, how do you want it configured??
 TALISMAN_CONFIG = {
     "content_security_policy": {
-        "default-src": ["'self'"],
         "img-src": ["'self'", "blob:", "data:"],
         "worker-src": ["'self'", "blob:"],
-        "connect-src": [
-            "'self'",
-            "https://api.mapbox.com",
-            "https://events.mapbox.com",
-        ],
         "object-src": "'none'",
         "style-src": [
             "'self'",
@@ -1447,14 +1441,8 @@ TALISMAN_CONFIG = {
 # React requires `eval` to work correctly in dev mode
 TALISMAN_DEV_CONFIG = {
     "content_security_policy": {
-        "default-src": ["'self'"],
         "img-src": ["'self'", "blob:", "data:"],
         "worker-src": ["'self'", "blob:"],
-        "connect-src": [
-            "'self'",
-            "https://api.mapbox.com",
-            "https://events.mapbox.com",
-        ],
         "object-src": "'none'",
         "style-src": [
             "'self'",

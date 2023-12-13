@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import Loading from 'src/components/Loading';
 import { updateQueryEditor } from 'src/SqlLab/actions/sqlLab';
+import fetchRetry from 'fetch-retry';
 
 import SyntaxHighlighter from 'react-syntax-highlighter/dist/cjs/light';
 import sql from 'react-syntax-highlighter/dist/cjs/languages/hljs/sql';
@@ -10,7 +11,7 @@ import github from 'react-syntax-highlighter/dist/cjs/styles/hljs/github';
 import type { DatabaseObject } from 'src/features/databases/types';
 import { Row, Col } from 'src/components';
 import { Input, TextArea } from 'src/components/Input';
-import { t, styled } from '@superset-ui/core';
+import { t, styled, callApi } from '@superset-ui/core';
 import Button from 'src/components/Button';
 import { Menu } from 'src/components/Menu';
 import { Form, FormItem } from 'src/components/Form';
@@ -55,6 +56,46 @@ const Styles = styled.span`
 // loading = show loading
 // step1 = show query
 // step2 = show results
+const callFixAPI = async (query: string) => {
+  // modify this to call the fix endpoint
+  const response = await fetch('https://sql-helper.m1finance.staging/fix', {
+    method: 'POST',
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/json; charset=UTF-8',
+    },
+    body: JSON.stringify({
+      user_query: query,
+    }),
+  });
+
+  const json = await response.json(); // response.json
+
+  return {
+    sqlQuery: json.sql_query,
+    aiText: json.ai_text,
+  };
+
+  /*
+  const result: FixResults = {
+    sqlQuery:
+      'SELECT * FROM data.fake_data WHERE generated_date = (SELECT MAX(generated_date) FROM data.fake_data)',
+    aiText:`Explanation:
+
+    Changed the max(generated_date) to a subquery to get the maximum generated_date value from the table. Using MAX() directly in the WHERE clause is not valid syntax.
+
+Optional optimization suggestions:
+
+    Add indexes on the generated_date column to improve performance of the MAX() subquery.
+    Select only the specific columns needed rather than using SELECT *.`;
+  };
+*/
+};
+
+interface FixResults {
+  sqlQuery: string;
+  aiText: string;
+}
 
 const ValidateQuery = ({
   queryEditorId,
@@ -66,6 +107,10 @@ const ValidateQuery = ({
 }: ValidateQueryProps) => {
   const [showModal, setShowModal] = useState(false);
   const [step, setStep] = useState('step1');
+  const [fixResults, setFixResults] = useState<FixResults>({
+    sqlQuery: '',
+    aiText: '',
+  });
   const dispatch = useDispatch();
   const editor = useSelector(state => state.sqlLab.queryEditors[0]);
   const unsavedQuery = useSelector(
@@ -75,20 +120,30 @@ const ValidateQuery = ({
   const queryToValidate =
     unsavedQuery !== undefined ? unsavedQuery : editor.sql;
 
-  const fixedQuery = `${queryToValidate} AND 1=1`;
-
   const onClose = () => {
     setStep('step1');
     setShowModal(false);
   };
 
-  const onRunValidate = () => {
-    setStep('loading');
-    setTimeout(() => setStep('step2'), 1500);
+  const onCopyToClipboard = () => {
+    navigator.clipboard.writeText(fixResults.sqlQuery);
   };
+
+  const onRunValidate = async () => {
+    setStep('loading');
+    const resp = await callFixAPI(queryToValidate);
+    setFixResults(resp);
+    setStep('step2');
+  };
+
   const onAcceptChanges = () => {
     setStep('step1');
-    dispatch(updateQueryEditor({ remoteId: editor.remoteId, sql: fixedQuery }));
+    dispatch(
+      updateQueryEditor({
+        remoteId: editor.remoteId,
+        sql: fixResults.sqlQuery,
+      }),
+    );
     setShowModal(false);
   };
 
@@ -135,6 +190,16 @@ const ValidateQuery = ({
             {step === 'step2' ? (
               <Button
                 buttonStyle="primary"
+                onClick={onCopyToClipboard}
+                className="m-r-3"
+                cta
+              >
+                {t('Copy to clipboard')}
+              </Button>
+            ) : null}
+            {step === 'step2' ? (
+              <Button
+                buttonStyle="primary"
                 onClick={onAcceptChanges}
                 className="m-r-3"
                 cta
@@ -171,8 +236,9 @@ const ValidateQuery = ({
                 Please see our recommended changes to your query below:
               </div>
               <SyntaxHighlighter language="sql" style={github}>
-                {fixedQuery}
+                {fixResults.sqlQuery}
               </SyntaxHighlighter>
+              <pre>{fixResults.aiText}</pre>
               <div>
                 To update your editor with these recommended changes, click
                 <strong>Accept changes</strong> below.

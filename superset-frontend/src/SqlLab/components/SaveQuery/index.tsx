@@ -72,9 +72,6 @@ const SaveQuery = ({
   database,
   columns,
 }: SaveQueryProps) => {
-  const state = useSelector(state => state);
-  console.log('state', state);
-
   const queryEditor = useQueryEditor(queryEditorId, [
     'autorun',
     'name',
